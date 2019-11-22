@@ -70,12 +70,16 @@ parsePrefix SChar input = case unpack input of
                                 (x :: xs) => Just (x, ltrim(pack xs))
                                 _ => Nothing
 
-parsePrefix (schemal .+. schemar) input = case parsePrefix schemal input of
-                                               Nothing => Nothing
-                                               Just (l_val, input') => 
-                                                    case parsePrefix schemar input' of
-                                                        Nothing => Nothing
-                                                        Just (r_val, input'') => Just ((l_val, r_val), input'')
+parsePrefix (schemal .+. schemar) input = do l_val <- parsePrefix schemal input
+                                             r_val <- parsePrefix schemar input
+                                             Just (((fst l_val),(fst r_val)), input)
+  
+  -- case parsePrefix schemal input of
+  --                                              Nothing => Nothing
+  --                                              Just (l_val, input') => 
+  --                                                   case parsePrefix schemar input' of
+  --                                                       Nothing => Nothing
+  --                                                       Just (r_val, input'') => Just ((l_val, r_val), input'')
                                                     
 total parseBySchema : (schema : Schema) -> String -> Maybe (SchemaType schema)
 parseBySchema schema input = case parsePrefix schema input of
@@ -120,16 +124,16 @@ getEntry pos store = let store_items = items store in
               Just id => Just ( (show pos) ++ ":" ++ display (index id (items store)) ++ "\n",
                                store)
 
--- getAllEntries : (store : DataStore) -> Maybe (String, DataStore)
--- getAllEntries store = getEntries (size store) store
---   where
 getEntries : Nat -> (store : DataStore) -> Maybe (String, DataStore)
 getEntries Z store = pure ("", store)
-getEntries (S k) store = case getEntry (toIntegerNat k) store of 
-                              Just (str, store') => case getEntries k store' of 
-                                                         Just (str', store'') => Just(str' ++ str, store'')
-                                                         Nothing => Nothing
-                              Nothing => Nothing
+getEntries (S k) store = do entryK <- getEntry (toIntegerNat k) store
+                            entries <- getEntries k (snd entryK)
+                            Just ((fst entries) ++ (fst entryK), snd entries)
+  -- case getEntry (toIntegerNat k) store of 
+  --                             Just (str, store') => case getEntries k store' of 
+  --                                                        Just (str', store'') => Just(str' ++ str, store'')
+  --                                                        Nothing => Nothing
+  --                             Nothing => Nothing
         
 
 
